@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../odev_service.dart';
+import '../../services/odev_service.dart';
 
 class OdevKontrolSayfasi extends StatefulWidget {
   final String odevAdi;

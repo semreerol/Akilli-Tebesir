@@ -3,8 +3,8 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 // Dosya yollarını kontrol et
 import 'models/teacher.dart';
-import 'screens/giris_sayfasi.dart';
-import 'odev_service.dart';
+import 'screens/auth/giris_sayfasi.dart';
+import 'services/odev_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,10 +14,11 @@ void main() async {
   await Hive.openBox<Teacher>('teachersBox');
   await Hive.openBox('ogrenciler');
   await Hive.openBox('odevler');
-  
-  // --- BU SATIRI MUTLAKA EKLE ---
   await Hive.openBox('kontrolBox'); // Ödev kontrol verileri burada tutulacak
-  
+  await Hive.openBox('siniflar');
+  await Hive.openBox('ogrenci_detaylari');
+  await Hive.openBox('ders_programi');
+
   runApp(const MyApp());
 }
 
@@ -30,7 +31,7 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Öğretmen Asistanı',
+      title: 'Akıllı Tebeşir',
       
       // --- TASARIM AYARLARI ---
       theme: ThemeData(

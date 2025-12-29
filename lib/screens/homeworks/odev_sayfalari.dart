@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:odev_takip/screens/odev_kontrol_sayfasi.dart';
-import '../odev_service.dart';
+import 'package:odev_takip/screens/homeworks/odev_kontrol_sayfasi.dart';
+import '../../services/odev_service.dart';
 
 class OdevSayfalari extends StatefulWidget {
   final OdevService service;

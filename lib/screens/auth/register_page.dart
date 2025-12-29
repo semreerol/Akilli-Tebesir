@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import '../models/teacher.dart'; // Model dosyanızın yolu
+import '../../models/teacher.dart'; // Model dosyanızın yolu
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
