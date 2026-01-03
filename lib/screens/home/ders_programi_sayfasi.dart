@@ -11,12 +11,11 @@ class DersProgramiSayfasi extends StatefulWidget {
 }
 
 class _DersProgramiSayfasiState extends State<DersProgramiSayfasi> {
-  // Günler Listesi
   final List<String> gunler = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
+  final int dersSayisi = 8; // Günde 8 ders
 
-  // Ders Ekleme/Düzenleme Penceresi
   void _dersDuzenle(String gun, int saat, String mevcutDers) {
-    TextEditingController controller = TextEditingController(text: mevcutDers);
+    TextEditingController _controller = TextEditingController(text: mevcutDers);
 
     showDialog(
       context: context,
@@ -24,12 +23,8 @@ class _DersProgramiSayfasiState extends State<DersProgramiSayfasi> {
         return AlertDialog(
           title: Text("$gun - $saat. Ders"),
           content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              hintText: "Örn: 6-A Matematik",
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.class_),
-            ),
+            controller: _controller,
+            decoration: const InputDecoration(hintText: "Ders adı giriniz (Örn: Matematik)"),
           ),
           actions: [
             TextButton(
@@ -39,7 +34,8 @@ class _DersProgramiSayfasiState extends State<DersProgramiSayfasi> {
             ElevatedButton(
               onPressed: () async {
                 // Veritabanına kaydet
-                await widget.service.dersKaydet(gun, saat, controller.text);
+                await widget.service.dersKaydet(gun, saat, _controller.text);
+                if (!mounted) return;
                 Navigator.pop(context);
                 setState(() {}); // Ekranı yenile
               },
@@ -53,66 +49,49 @@ class _DersProgramiSayfasiState extends State<DersProgramiSayfasi> {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: gunler.length, // 5 Gün
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text("Haftalık Ders Programı"),
-          backgroundColor: Colors.indigo,
-          foregroundColor: Colors.white,
-          bottom: TabBar(
-            isScrollable: true, // Sığmazsa kaydırılabilsin
-            indicatorColor: Colors.white,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            tabs: gunler.map((gun) => Tab(text: gun)).toList(),
-          ),
-        ),
-        body: TabBarView(
-          children: gunler.map((gun) {
-            return _buildGunlukListe(gun);
-          }).toList(),
-        ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Haftalık Ders Programı"),
+        backgroundColor: Colors.indigo,
+        foregroundColor: Colors.white,
       ),
-    );
-  }
+      body: ListView.builder(
+        itemCount: gunler.length,
+        itemBuilder: (context, gunIndex) {
+          String gun = gunler[gunIndex];
+          return ExpansionTile(
+            title: Text(gun, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+            // İlk gün açık gelsin, diğerleri kapalı
+            initiallyExpanded: gunIndex == 0, 
+            children: List.generate(dersSayisi, (index) {
+              int saat = index + 1;
+              
+              return FutureBuilder<String>(
+                future: widget.service.dersGetir(gun, saat),
+                builder: (context, snapshot) {
+                  String dersAdi = "Boş";
+                  if (snapshot.hasData && snapshot.data != null && snapshot.data!.isNotEmpty) {
+                    dersAdi = snapshot.data!;
+                  }
 
-  // Her gün için 8 saatlik liste oluşturan widget
-  Widget _buildGunlukListe(String gun) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 8, // Günde 8 ders varsaydık
-      itemBuilder: (context, index) {
-        int dersSaati = index + 1;
-        // O saatteki dersi veritabanından çek
-        String dersAdi = widget.service.dersGetir(gun, dersSaati);
-        bool bosMu = dersAdi.isEmpty;
-
-        return Card(
-          elevation: bosMu ? 1 : 3,
-          color: bosMu ? Colors.grey[50] : Colors.white,
-          margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: bosMu ? Colors.grey[300] : Colors.indigo,
-              foregroundColor: Colors.white,
-              child: Text("$dersSaati"),
-            ),
-            title: Text(
-              bosMu ? "Boş Ders" : dersAdi,
-              style: TextStyle(
-                fontWeight: bosMu ? FontWeight.normal : FontWeight.bold,
-                color: bosMu ? Colors.grey : Colors.black87,
-              ),
-            ),
-            trailing: IconButton(
-              icon: Icon(Icons.edit, color: bosMu ? Colors.grey : Colors.indigo),
-              onPressed: () => _dersDuzenle(gun, dersSaati, dersAdi),
-            ),
-            onTap: () => _dersDuzenle(gun, dersSaati, dersAdi),
-          ),
-        );
-      },
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.indigo.shade100,
+                      child: Text("$saat", style: const TextStyle(color: Colors.indigo)),
+                    ),
+                    title: Text(dersAdi, style: TextStyle(
+                      color: dersAdi == "Boş" ? Colors.grey : Colors.black,
+                      fontWeight: dersAdi == "Boş" ? FontWeight.normal : FontWeight.bold
+                    )),
+                    trailing: const Icon(Icons.edit, size: 18, color: Colors.grey),
+                    onTap: () => _dersDuzenle(gun, saat, dersAdi == "Boş" ? "" : dersAdi),
+                  );
+                },
+              );
+            }),
+          );
+        },
+      ),
     );
   }
 }

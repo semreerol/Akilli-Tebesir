@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:odev_takip/services/odev_service.dart';
 import '../../services/odev_service.dart';
-import 'ogrenci_detay_sayfasi.dart';
+import 'ogrenci_detay_sayfasi.dart'; // Artık temiz olduğu için hata vermeyecek
 
 class OgrenciSayfalari extends StatefulWidget {
   final OdevService service;
@@ -14,9 +13,8 @@ class OgrenciSayfalari extends StatefulWidget {
 
 class _OgrenciSayfalariState extends State<OgrenciSayfalari> {
   List<String> ogrenciler = [];
-  final TextEditingController _isimController = TextEditingController();
+  bool _yukleniyor = true;
   
-  // Sınıf seçimi için değişkenler
   String? _secilenSinif; 
   List<String> kayitliSiniflar = [];
 
@@ -26,16 +24,24 @@ class _OgrenciSayfalariState extends State<OgrenciSayfalari> {
     _verileriYukle();
   }
 
-  void _verileriYukle() {
-    setState(() {
-      ogrenciler = widget.service.ogrencileriGetir();
-      kayitliSiniflar = widget.service.siniflariGetir(); // Sınıfları servisten çek
-    });
+  Future<void> _verileriYukle() async {
+    setState(() => _yukleniyor = true);
+    
+    var gelenOgrenciler = await widget.service.ogrencileriGetir();
+    var gelenSiniflar = await widget.service.siniflariGetir();
+
+    if (mounted) {
+      setState(() {
+        ogrenciler = gelenOgrenciler;
+        kayitliSiniflar = gelenSiniflar;
+        _yukleniyor = false;
+      });
+    }
   }
 
   void _yeniOgrenciEkle() {
-    _isimController.clear();
-    _secilenSinif = null; // Sıfırla
+    TextEditingController _isimController = TextEditingController();
+    _secilenSinif = null;
 
     showDialog(
       context: context,
@@ -47,7 +53,6 @@ class _OgrenciSayfalariState extends State<OgrenciSayfalari> {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // İsim Alanı
                   TextField(
                     controller: _isimController,
                     decoration: const InputDecoration(
@@ -58,14 +63,11 @@ class _OgrenciSayfalariState extends State<OgrenciSayfalari> {
                   ),
                   const SizedBox(height: 15),
                   
-                  // --- HEM YAZILABİLİR HEM SEÇİLEBİLİR ALAN (AUTOCOMPLETE) ---
                   Autocomplete<String>(
                     optionsBuilder: (TextEditingValue textEditingValue) {
-                      // Eğer boşsa tüm listeyi göster
                       if (textEditingValue.text == '') {
                         return kayitliSiniflar;
                       }
-                      // Yazılan harfe göre filtrele
                       return kayitliSiniflar.where((String option) {
                         return option.contains(textEditingValue.text.toUpperCase());
                       });
@@ -84,7 +86,6 @@ class _OgrenciSayfalariState extends State<OgrenciSayfalari> {
                           border: OutlineInputBorder(),
                         ),
                         onChanged: (value) {
-                          // Elle yazılan değeri de alıyoruz
                           _secilenSinif = value.toUpperCase();
                         },
                       );
@@ -101,19 +102,13 @@ class _OgrenciSayfalariState extends State<OgrenciSayfalari> {
                   onPressed: () async {
                     if (_isimController.text.isNotEmpty && _secilenSinif != null && _secilenSinif!.isNotEmpty) {
                       
-                      // 1. Yeni girilen sınıfı veritabanına kaydet (Bir dahaki sefere çıksın diye)
+                      Navigator.pop(context); 
+                      
                       await widget.service.sinifEkle(_secilenSinif!);
-
-                      // 2. Öğrenciyi kaydet: "Ahmet (9-C)" formatında
                       String tamIsim = "${_isimController.text} ($_secilenSinif)";
                       await widget.service.ogrenciEkle(tamIsim);
                       
-                      Navigator.pop(context);
-                      _verileriYukle(); // Listeyi yenile
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Lütfen isim ve sınıf giriniz.")),
-                      );
+                      _verileriYukle(); 
                     }
                   },
                   child: const Text("Kaydet"),
@@ -126,8 +121,8 @@ class _OgrenciSayfalariState extends State<OgrenciSayfalari> {
     );
   }
 
-  void _ogrenciSil(int index) async {
-    await widget.service.ogrenciSil(index);
+  void _ogrenciSil(String isim) async {
+    await widget.service.ogrenciSil(isim);
     _verileriYukle();
   }
 
@@ -139,46 +134,47 @@ class _OgrenciSayfalariState extends State<OgrenciSayfalari> {
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
-      body: ogrenciler.isEmpty
-          ? const Center(child: Text("Henüz kayıtlı öğrenci yok."))
-          : ListView.builder(
-              padding: const EdgeInsets.all(10),
-              itemCount: ogrenciler.length,
-              itemBuilder: (context, index) {
-                return Card(
-                  elevation: 2,
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.indigo,
-                      foregroundColor: Colors.white,
-                      child: Text(ogrenciler[index][0].toUpperCase()),
-                    ),
-                    title: Text(
-                      ogrenciler[index], 
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => OgrenciDetaySayfasi(
-                            studentName: ogrenciler[index],
-                            service: widget.service,
-                          ),
+      body: _yukleniyor
+          ? const Center(child: CircularProgressIndicator())
+          : ogrenciler.isEmpty
+              ? const Center(child: Text("Henüz kayıtlı öğrenci yok."))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(10),
+                  itemCount: ogrenciler.length,
+                  itemBuilder: (context, index) {
+                    return Card(
+                      elevation: 2,
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: Colors.indigo,
+                          foregroundColor: Colors.white,
+                          child: Text(ogrenciler[index][0].toUpperCase()),
                         ),
-                      ).then((_) {
-                        _verileriYukle();
-                      });
-                    },
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.redAccent),
-                      onPressed: () => _ogrenciSil(index),
-                    ),
-                  ),
-                );
-              },
-            ),
+                        title: Text(
+                          ogrenciler[index],
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        onTap: () {
+                          // BURADAKİ HATA ŞİMDİ GİDECEK
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => OgrenciDetaySayfasi(
+                                studentName: ogrenciler[index],
+                                service: widget.service,
+                              ),
+                            ),
+                          );
+                        },
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.redAccent),
+                          onPressed: () => _ogrenciSil(ogrenciler[index]),
+                        ),
+                      ),
+                    );
+                  },
+                ),
       floatingActionButton: FloatingActionButton(
         onPressed: _yeniOgrenciEkle,
         backgroundColor: Colors.indigo,

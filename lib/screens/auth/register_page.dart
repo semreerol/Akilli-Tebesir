@@ -1,134 +1,109 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import '../../models/teacher.dart'; // Model dosyanızın yolu
+import '../../services/auth_service.dart';
+import '../../services/odev_service.dart';
+import '../home/ana_sayfa.dart';
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({super.key});
+  final OdevService service; // <-- İşte eksik olan kısım buydu
+
+  const RegisterPage({super.key, required this.service});
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  // 1. Verileri almak için kontrolcüler (Kumandalar)
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  
+  final AuthService _authService = AuthService(); // Firebase Auth servisi
 
-  // 2. Kayıt İşlemi Fonksiyonu
-  void _register() {
-    final String name = _nameController.text.trim();
-    final String username = _usernameController.text.trim();
-    final String password = _passwordController.text.trim();
-
-    // Boş alan kontrolü
-    if (name.isEmpty || username.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Lütfen tüm alanları doldurunuz!"),
-          backgroundColor: Colors.red,
-        ),
-      );
+  void _kayitOl() async {
+    if (_nameController.text.isEmpty || _emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Lütfen tüm alanları doldurun.")));
       return;
     }
 
-    // Hive Kutusunu Çağır (main.dart'ta açtığımız kutu)
-    final box = Hive.box<Teacher>('teachersBox');
+    try {
+      // 1. Firebase'e Kayıt Ol
+      final user = await _authService.signUp(_emailController.text, _passwordController.text);
+      
+      if (user != null) {
+        // (İsteğe bağlı) Kullanıcı adını güncellemek için:
+        // await user.updateDisplayName(_nameController.text);
 
-    // Kullanıcı adı daha önce alınmış mı kontrolü (İsteğe bağlı ekstra güvenlik)
-    bool userExists = box.values.any((teacher) => teacher.username == username);
-    if (userExists) {
-       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Bu kullanıcı adı zaten kullanılıyor.")),
-      );
-      return;
+        if (!mounted) return;
+        
+        // 2. Başarılıysa Ana Sayfaya Git
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AnaSayfa(
+              service: widget.service, // Servisi aktarıyoruz
+              teacherName: _nameController.text, // Girilen ismi ana sayfaya taşıyoruz
+            ),
+          ),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Kayıt Hatası: $e")));
     }
-
-    // 3. Yeni Öğretmen Nesnesini Oluştur
-    final newTeacher = Teacher(
-      name: name,
-      username: username,
-      password: password,
-    );
-
-    // 4. Kutuya Ekle (Veritabanına Kayıt)
-    box.add(newTeacher);
-
-    // 5. Başarılı Mesajı ve Geri Dönüş
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Kayıt Başarılı! Hoşgeldin $name öğretmenim.")),
-    );
-
-    Navigator.pop(context); // Giriş sayfasına geri gönder
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.indigo,
       appBar: AppBar(
-        title: const Text("Öğretmen Kaydı"),
-        centerTitle: true,
+        title: const Text("Yeni Hesap Oluştur"),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: Center(
         child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.app_registration, size: 80, color: Colors.blue),
-              const SizedBox(height: 20),
-              
-              // --- İSİM ALANI ---
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: "Ad Soyad (Örn: Yasemin Öğretmen)",
-                  prefixIcon: Icon(Icons.badge),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // --- KULLANICI ADI ALANI ---
-              TextField(
-                controller: _usernameController,
-                decoration: const InputDecoration(
-                  labelText: "Kullanıcı Adı",
-                  prefixIcon: Icon(Icons.person),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // --- ŞİFRE ALANI ---
-              TextField(
-                controller: _passwordController,
-                obscureText: true, // Şifreyi gizle
-                decoration: const InputDecoration(
-                  labelText: "Şifre",
-                  prefixIcon: Icon(Icons.lock),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // --- KAYIT BUTONU ---
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _register,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
+          padding: const EdgeInsets.all(24.0),
+          child: Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text("Öğretmen Kaydı", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                  const SizedBox(height: 20),
+                  
+                  TextField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(labelText: "Ad Soyad", prefixIcon: Icon(Icons.person), border: OutlineInputBorder()),
                   ),
-                  child: const Text(
-                    "Kayıt Ol",
-                    style: TextStyle(fontSize: 18),
+                  const SizedBox(height: 15),
+                  TextField(
+                    controller: _emailController,
+                    decoration: const InputDecoration(labelText: "E-Posta", prefixIcon: Icon(Icons.email), border: OutlineInputBorder()),
                   ),
-                ),
+                  const SizedBox(height: 15),
+                  TextField(
+                    controller: _passwordController,
+                    obscureText: true,
+                    decoration: const InputDecoration(labelText: "Şifre", prefixIcon: Icon(Icons.lock), border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _kayitOl,
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+                      child: const Text("Kayıt Ol", style: TextStyle(fontSize: 16)),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

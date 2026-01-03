@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:async'; // Zamanlayıcı için
-import 'dart:math';  // Rastgele sayı üretmek için
+import 'dart:async';
+import 'dart:math';
 import '../../services/odev_service.dart';
 
 class SansliOgrenciSayfasi extends StatefulWidget {
@@ -13,28 +13,46 @@ class SansliOgrenciSayfasi extends StatefulWidget {
 }
 
 class _SansliOgrenciSayfasiState extends State<SansliOgrenciSayfasi> {
-  List<String> ogrenciler = [];
-  String secilenIsim = "Hazır mısın?"; // Ekranda yazan metin
-  bool isSearching = false; // Animasyon dönüyor mu?
+  List<String> siniflar = [];
+  String? secilenSinif;
+  
+  String ekrandakiIsim = "Sınıf Seçiniz"; 
+  bool isSearching = false;
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    // Veritabanından öğrencileri çekiyoruz
-    ogrenciler = widget.service.ogrencileriGetir();
+    _siniflariYukle();
+  }
+
+  // Sınıfları veritabanından çek
+  Future<void> _siniflariYukle() async {
+    var gelenler = await widget.service.siniflariGetir();
+    setState(() {
+      siniflar = gelenler;
+      if (siniflar.isNotEmpty) {
+        secilenSinif = siniflar.first;
+        ekrandakiIsim = "Hazır mısın $secilenSinif?";
+      }
+    });
   }
 
   @override
   void dispose() {
-    _timer?.cancel(); // Sayfadan çıkarsa zamanlayıcıyı durdur
+    _timer?.cancel();
     super.dispose();
   }
 
-  void _sansliKisiyiSec() {
-    if (ogrenciler.isEmpty) {
+  void _sansliKisiyiSec() async {
+    if (secilenSinif == null) return;
+
+    // Veritabanından öğrencileri çek (BEKLEME NOKTASI)
+    List<String> sinifListesi = await widget.service.ogrencileriSinifaGoreGetir(secilenSinif!);
+
+    if (sinifListesi.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Listede hiç öğrenci yok!")),
+        SnackBar(content: Text("$secilenSinif sınıfında hiç öğrenci yok!")),
       );
       return;
     }
@@ -45,24 +63,16 @@ class _SansliOgrenciSayfasiState extends State<SansliOgrenciSayfasi> {
 
     int turSayisi = 0;
     
-    // 100 milisaniyede bir isim değişsin (Hızlı geçiş)
     _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
       setState(() {
-        // Rastgele bir isim seç ve ekrana yaz
-        int randomIndex = Random().nextInt(ogrenciler.length);
-        
-        // Eğer isim "Ali (6-A)" formatındaysa sadece "Ali" kısmını alalım
-        String hamIsim = ogrenciler[randomIndex];
-        if (hamIsim.contains("(")) {
-          secilenIsim = hamIsim.split("(")[0].trim();
-        } else {
-          secilenIsim = hamIsim;
-        }
+        int randomIndex = Random().nextInt(sinifListesi.length);
+        String hamIsim = sinifListesi[randomIndex];
+        // İsmi temizle: "Ahmet (6-A)" -> "Ahmet"
+        ekrandakiIsim = hamIsim.split("(")[0].trim();
       });
 
       turSayisi++;
 
-      // Yaklaşık 3 saniye (30 tur) sonra durdur
       if (turSayisi >= 30) {
         timer.cancel();
         setState(() {
@@ -87,17 +97,17 @@ class _SansliOgrenciSayfasiState extends State<SansliOgrenciSayfasi> {
               const Icon(Icons.emoji_events, size: 60, color: Colors.orange),
               const SizedBox(height: 10),
               Text(
-                secilenIsim,
+                ekrandakiIsim,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.indigo),
               ),
+              Text("($secilenSinif)", style: const TextStyle(color: Colors.grey)),
             ],
           ),
           actions: [
             Center(
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
                 child: const Text("Tamam"),
               ),
             ),
@@ -121,16 +131,42 @@ class _SansliOgrenciSayfasiState extends State<SansliOgrenciSayfasi> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              "Bugünün şanslısı kim?",
-              style: TextStyle(color: Colors.white70, fontSize: 18),
+            // Sınıf Seçimi
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: secilenSinif,
+                  dropdownColor: Colors.indigo[700],
+                  icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  hint: const Text("Sınıf Seç", style: TextStyle(color: Colors.white70)),
+                  items: siniflar.map((String sinif) {
+                    return DropdownMenuItem<String>(
+                      value: sinif,
+                      child: Text("$sinif Sınıfı"),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      secilenSinif = newValue;
+                      ekrandakiIsim = "Hazır mısın $newValue?";
+                    });
+                  },
+                ),
+              ),
             ),
+            
             const SizedBox(height: 30),
             
-            // --- İSİM KARTI ---
+            // İsim Kartı
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
-              margin: const EdgeInsets.symmetric(horizontal: 20),
+              width: 300, // Sabit genişlik
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 60),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(30),
@@ -147,13 +183,9 @@ class _SansliOgrenciSayfasiState extends State<SansliOgrenciSayfasi> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    secilenIsim,
+                    ekrandakiIsim,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
+                    style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black87),
                   ),
                 ],
               ),
@@ -161,12 +193,11 @@ class _SansliOgrenciSayfasiState extends State<SansliOgrenciSayfasi> {
             
             const SizedBox(height: 50),
 
-            // --- BUTON ---
             SizedBox(
               width: 200,
               height: 60,
               child: ElevatedButton(
-                onPressed: isSearching ? null : _sansliKisiyiSec, // Dönüyorsa tıklanmasın
+                onPressed: (isSearching || secilenSinif == null) ? null : _sansliKisiyiSec,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
                   foregroundColor: Colors.white,

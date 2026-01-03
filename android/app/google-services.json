@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1088764063334",
+    "project_id": "akilli-tebesir",
+    "storage_bucket": "akilli-tebesir.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1088764063334:android:433e7af9d754c97f3bc7a7",
+        "android_client_info": {
+          "package_name": "com.example.odev_takip"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA9YE7LTh8APTZjj_Kzu6wuESOEMIL49Ds"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
