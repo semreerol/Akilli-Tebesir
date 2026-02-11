@@ -12,7 +12,20 @@
           "package_name": "com.example.odev_takip"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1088764063334-sl9p8an9qojvv7qrqnkqh06n3dl87i9j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.odev_takip",
+            "certificate_hash": "b3262a9074f1cfc6c3aca12056ac74c0595fe2f0"
+          }
+        },
+        {
+          "client_id": "1088764063334-aa68romm2o4gr41tvu039vp757ga3ael.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyA9YE7LTh8APTZjj_Kzu6wuESOEMIL49Ds"
@@ -20,7 +33,63 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1088764063334-aa68romm2o4gr41tvu039vp757ga3ael.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1088764063334-64ug2bcliiui6rbjd4i0lt9amvu1pjbm.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.odevTakip"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1088764063334:android:d60c1e500d10e8d23bc7a7",
+        "android_client_info": {
+          "package_name": "com.semreerol.akillitebesir"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1088764063334-go5045cc6bv8ds6l0u4r6utlg65uj4g5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.semreerol.akillitebesir",
+            "certificate_hash": "b3262a9074f1cfc6c3aca12056ac74c0595fe2f0"
+          }
+        },
+        {
+          "client_id": "1088764063334-aa68romm2o4gr41tvu039vp757ga3ael.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA9YE7LTh8APTZjj_Kzu6wuESOEMIL49Ds"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1088764063334-aa68romm2o4gr41tvu039vp757ga3ael.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1088764063334-64ug2bcliiui6rbjd4i0lt9amvu1pjbm.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.odevTakip"
+              }
+            }
+          ]
         }
       }
     }
